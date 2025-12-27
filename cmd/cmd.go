@@ -4,6 +4,7 @@ import (
 	"runtime"
 	"time"
 
+	"proper/components"
 	"proper/models"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -50,6 +51,9 @@ func InitialModel() models.Model {
 		},
 		Cursor:    0,
 		Listening: false,
+		Listener:  components.ListeningStyle(),
+		Editing:   false,
+		Editor:    components.EditingStyle(),
 	}
 }
 

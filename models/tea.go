@@ -7,14 +7,17 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type Model struct {
 	Macros    []Macro
+	List      list.Model
 	Cursor    int
 	Listening bool
-	List      list.Model
+	Listener  lipgloss.Style
 	Editing   bool
+	Editor    lipgloss.Style
 }
 
 func (m Model) Init() tea.Cmd {
@@ -26,13 +29,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.List.SetWidth(msg.Width)
 		return m, nil
-
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 
 		case "enter":
+			if m.Listening {
+				return m, nil
+			}
+
 			selectedMacroFromList, ok := m.List.SelectedItem().(Item)
 			if !ok {
 				return m, tea.Quit
@@ -55,23 +61,41 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			macro.toggleActivated()
+		case "e":
+			if m.Listening {
+				return m, nil
+			}
+
+			if m.Editing {
+				m.Editing = false
+			} else {
+				m.Editing = true
+			}
 		case "tab":
 			if m.Listening {
 				m.Listening = false
 			} else {
+				m.Editing = false
 				m.Listening = true
 			}
 		}
 	}
 
-	var cmd tea.Cmd
-	m.List, cmd = m.List.Update(msg)
-	return m, cmd
+	if !m.Listening {
+		var cmd tea.Cmd
+		m.List, cmd = m.List.Update(msg)
+		return m, cmd
+	}
+
+	return m, nil
 }
 
 func (m Model) View() string {
+	if m.Editing == true {
+		return "\n" + m.Editor.Render("Editing goes here!")
+	}
 	if m.Listening == true {
-		return "\n" + "Listening..."
+		return "\n" + m.Listener.Render("Listening")
 	}
 	return "\n" + m.List.View()
 }
